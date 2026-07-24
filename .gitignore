@@ -1,0 +1,13 @@
+.env
+users.yaml
+db_config.yaml
+dpd_checks.db
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+vendor/
+run_preview.py
+# Bundled AA report samples contain real-looking PII (PAN / DOB / address) — kept out
+# of the public repo. They are test-only fixtures; the live platform doesn't use them.
+samples/

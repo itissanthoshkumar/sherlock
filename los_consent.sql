@@ -1,0 +1,8 @@
+-- LOS consent query — PENDING from the user.
+-- Contract: given one LMS loan/account id ({{loan_id}}), return that loan's AA
+-- consent rows captured at origination. Expected columns (aliases accepted, see
+-- los_consent._map_consent_row): consent_id, consent_type (ONETIME|PERIODIC),
+-- start_date, end_date, expiry, main_txn_id, status, customer_name, mobile.
+--
+-- Paste the real query below this line and remove nothing above (the file is
+-- treated as "not configured" while only comments are present).

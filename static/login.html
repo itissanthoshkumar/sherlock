@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sign in · Sherlock</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23011947'/><g fill='none' stroke-linecap='round' stroke-linejoin='round'><circle cx='13' cy='12.6' r='7.7' stroke='%23ffffff' stroke-width='2.3'/><path d='M18.4 18L25 24.6' stroke='%23ffffff' stroke-width='2.8'/><path d='M10.5 15.8V12.4' stroke='%23ffffff' stroke-width='2.1'/><path d='M13 15.8V10.5' stroke='%23ffffff' stroke-width='2.1'/><path d='M15.5 15.8V13.8' stroke='%23F5A623' stroke-width='2.3'/></g></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #ecebf3; --card: #ffffff; --ink: #141126; --muted: #8b8996;
+    /* brand: Prayaan royal blue + gold (the --violet names are legacy aliases) */
+    --brand: #00549c; --gold: #f0a800;
+    --violet: var(--brand); --violet-deep: #013f78; --violet-soft: #e2edf6;
+    --line: #eceaf2; --field: #f6f5fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: "DM Sans", system-ui, sans-serif; color: var(--ink);
+    background: var(--bg); display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px; -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    width: 100%; max-width: 420px; background: var(--card); border-radius: 26px;
+    padding: 40px 36px 34px; box-shadow: 0 24px 70px rgba(20, 17, 38, .10);
+    animation: pop .45s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+  @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+  .logo {
+    width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 18px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(150deg, #012a63, #011340);
+    box-shadow: 0 10px 24px rgba(1, 25, 71, .28), inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .logo svg { width: 34px; height: 34px; }
+  h1 { font-family: "Fraunces", Georgia, serif; font-size: 29px; font-weight: 600; margin: 0 0 4px; text-align: center; letter-spacing: -.015em; }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 26px; text-align: center; font-weight: 500; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 7px 2px; }
+  .field input {
+    width: 100%; border: 1.5px solid transparent; outline: none; border-radius: 14px; padding: 13px 16px;
+    font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: var(--field);
+    transition: border-color .15s, background .15s;
+  }
+  .field input::placeholder { color: #b9b7c4; font-weight: 500; }
+  .field input:focus { border-color: var(--violet); background: #fff; }
+  .btn {
+    width: 100%; border: none; cursor: pointer; color: #fff; border-radius: 14px; margin-top: 8px;
+    font-family: inherit; font-weight: 700; font-size: 15px; padding: 14px; background: var(--violet);
+    transition: background .15s, transform .08s;
+  }
+  .btn:hover { background: var(--violet-deep); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 12px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .quick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .quick button {
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink); font-family: inherit;
+    font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    transition: border-color .15s, background .15s, transform .08s;
+  }
+  .quick button:hover { border-color: var(--violet); background: var(--violet-soft); color: var(--violet-deep); }
+  .quick button:active { transform: translateY(1px); }
+  .quick button b { display: block; font-size: 9.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .hintline { text-align: center; color: var(--muted); font-size: 11.5px; margin: 14px 0 0; font-weight: 500; }
+  .error {
+    margin-top: 16px; border-radius: 12px; padding: 12px 14px; font-size: 13px; font-weight: 600;
+    background: #fdeceb; color: #d3342c; display: none;
+  }
+  .error.show { display: block; }
+</style>
+</head>
+<body>
+  <form class="card" id="form" autocomplete="on">
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="12.6" r="7.7" stroke="#ffffff" stroke-width="2.3"/><path d="M18.4 18L25 24.6" stroke="#ffffff" stroke-width="2.8"/><path d="M10.5 15.8V12.4" stroke="#ffffff" stroke-width="2.1"/><path d="M13 15.8V10.5" stroke="#ffffff" stroke-width="2.1"/><path d="M15.5 15.8V13.8" stroke="#F5A623" stroke-width="2.3"/></svg>
+    </div>
+    <h1>Sherlock</h1>
+    <p class="sub">by Prayaan · know the bounce before the 4th</p>
+
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" placeholder="your username" autocomplete="username" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="your password" autocomplete="current-password" required />
+    </div>
+
+    <button class="btn" id="submit" type="submit">Sign in</button>
+    <div class="error" id="error"></div>
+
+    <div id="demo-wrap" hidden>
+      <div class="divider">demo — continue as</div>
+      <div class="quick" id="quick"></div>
+      <p class="hintline">Demo logins (this instance only). One tap signs you in.</p>
+    </div>
+    <p class="hintline" id="prod-hint">Access is provisioned by your administrator.</p>
+  </form>
+
+<script>
+const form = document.getElementById('form');
+const errEl = document.getElementById('error');
+const btn = document.getElementById('submit');
+
+function showError(msg) { errEl.textContent = '⚠ ' + msg; errEl.classList.add('show'); }
+
+async function doLogin(username, password) {
+  errEl.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (res.ok) { window.location.href = '/'; return; }
+    let msg = 'Login failed';
+    try { msg = (await res.json()).detail || msg; } catch (_) {}
+    showError(msg);
+  } catch (err) {
+    showError(err.message || 'Network error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  doLogin(document.getElementById('username').value, document.getElementById('password').value);
+});
+
+// Demo quick-login buttons — populated ONLY when the server has SHOW_DEMO_LOGINS on
+// (the credentials aren't sent otherwise). Off in production => the block stays hidden.
+(async () => {
+  try {
+    const cfg = await (await fetch('/api/public-config')).json();
+    const list = (cfg && cfg.demo_logins) || [];
+    if (!list.length) return;
+    const q = document.getElementById('quick');
+    q.innerHTML = list.map(d =>
+      `<button type="button" data-u="${d.u}" data-p="${d.p}">${d.label}<b>${d.sub || ''}</b></button>`
+    ).join('');
+    q.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-u]');
+      if (!b) return;
+      document.getElementById('username').value = b.dataset.u;
+      document.getElementById('password').value = b.dataset.p;
+      doLogin(b.dataset.u, b.dataset.p);
+    });
+    document.getElementById('prod-hint').hidden = true;
+    document.getElementById('demo-wrap').hidden = false;
+  } catch (_) { /* no demo logins — leave the production hint */ }
+})();
+</script>
+</body>
+</html>
