@@ -1189,6 +1189,18 @@ const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"'`]/g, c => ({'&':
 // Only http(s) links may become clickable anchors — blocks javascript:/data: URLs
 // smuggled through an AA/consent response from executing on click (stored click-XSS).
 const safeUrl = (u) => { try { const p = new URL(u, location.origin); return (p.protocol === 'http:' || p.protocol === 'https:') ? p.href : ''; } catch (_) { return ''; } };
+// FastAPI error bodies: `detail` is a STRING for HTTPException, but an ARRAY of
+// {msg, loc} objects for 422 validation errors. Render a readable message either way
+// so an error is never shown as the useless "[object Object]".
+function apiErr(d, fallback) {
+  const dt = d && d.detail;
+  if (typeof dt === 'string') return dt;
+  if (Array.isArray(dt)) return dt.map(e => (e && e.msg)
+    ? e.msg + (Array.isArray(e.loc) ? ' (' + e.loc.filter(x => x !== 'body').join('.') + ')' : '')
+    : (typeof e === 'string' ? e : JSON.stringify(e))).join('; ');
+  if (dt && typeof dt === 'object') return dt.msg || JSON.stringify(dt);
+  return (d && d.error) || fallback || 'request failed';
+}
 const yn = (v) => v ? '<span class="chip yes">Yes</span>' : '<span class="chip no">No</span>';
 
 let CFG = {};
@@ -2877,7 +2889,7 @@ async function aaliveSend(step) {
   try {
     const res = await fetch(apiUrl(AASTEP[step].api), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(aaliveApiBody(step)) });
     const d = await res.json();
-    if (!res.ok) throw new Error(d.detail || 'request failed');
+    if (!res.ok) throw new Error(apiErr(d, 'request failed'));
     if (step === 1 && d.parsed) { AALIVE.request_id = d.parsed.request_id; AALIVE.consent_url = d.parsed.url; }
     if (step === 2 && d.parsed) { AALIVE.main_txn_id = d.parsed.txn_id; }
     if (step === 3 && d.parsed) { AALIVE.periodic_txn_id = d.parsed.txn_id; }
@@ -2894,9 +2906,9 @@ async function aaliveRetrieve(kind) {
   io.innerHTML = '<p class="hint">Retrieving ' + kind + ' report…</p>';
   $('aalive-out').innerHTML = '';
   try {
-    const res = await fetch(apiUrl('/api/aa-live/retrieve'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txn_id: txn, fetch_type: kind, loan_id: loan, request_id: AALIVE.request_id || null, live: AALIVE.live }) });
+    const res = await fetch(apiUrl('/api/aa-live/retrieve'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txn_id: txn, fetch_type: kind, loan_id: loan, request_id: AALIVE.request_id != null ? String(AALIVE.request_id) : null, live: AALIVE.live }) });
     const d = await res.json();
-    if (!res.ok) throw new Error(d.detail || 'retrieve failed');
+    if (!res.ok) throw new Error(apiErr(d, 'retrieve failed'));
     aaliveShowIO(5, d);
     aaliveLoadCalls();
     if (d.stored) {
@@ -2923,10 +2935,10 @@ async function pqRetrieveOnly(child, main, loan, reqId) {
   const rr = await fetch(apiUrl('/api/aa-live/retrieve'), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ txn_id: child, fetch_type: 'PERIODIC', loan_id: loan,
-                           main_txn_id: main, request_id: reqId || null, live: AALIVE.live })
+                           main_txn_id: main, request_id: reqId != null ? String(reqId) : null, live: AALIVE.live })
   });
   const d = await rr.json(); aaliveLoadCalls();
-  if (!rr.ok) throw new Error(d.detail || 'retrieve failed');
+  if (!rr.ok) throw new Error(apiErr(d, 'retrieve failed'));
   __pqReport = d.response || null;
   const jsonBlock = `
     <div id="pq-json" hidden style="margin:8px 0 2px">
@@ -3011,7 +3023,7 @@ async function pqFetch() {
     io.innerHTML = '<p class="hint">Initiating periodic fetch…</p>';
     const ir = await fetch(apiUrl('/api/aa-live/initiate'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ main_txn_id: main, live: AALIVE.live }) });
     const id = await ir.json(); aaliveLoadCalls();
-    if (!ir.ok) throw new Error(id.detail || 'initiate failed');
+    if (!ir.ok) throw new Error(apiErr(id, 'initiate failed'));
     const child = id.parsed && id.parsed.txn_id;
     AALIVE.pq_txn = child; $('pq-txn').textContent = 'periodic txn_id: ' + (child || '—');
     if (!child) throw new Error('initiate returned no periodic txn id');
@@ -3053,7 +3065,7 @@ async function pqRetrieve() {
   const loan = ($('pq-loan').value.trim()) || ('AA-' + ($('pq-main').value.trim()));
   io.innerHTML = '<p class="hint">Retrieving periodic report…</p>'; $('pq-out').innerHTML = '';
   try {
-    const res = await fetch(apiUrl('/api/aa-live/retrieve'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txn_id: txn, fetch_type: 'PERIODIC', loan_id: loan, main_txn_id: $('pq-main').value.trim() || null, request_id: AALIVE.request_id || null, live: AALIVE.live }) });
+    const res = await fetch(apiUrl('/api/aa-live/retrieve'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txn_id: txn, fetch_type: 'PERIODIC', loan_id: loan, main_txn_id: $('pq-main').value.trim() || null, request_id: AALIVE.request_id != null ? String(AALIVE.request_id) : null, live: AALIVE.live }) });
     const d = await res.json();
     aaliveLoadCalls();
     if (!res.ok) throw new Error(d.detail || 'failed');
@@ -3722,7 +3734,7 @@ function usersRender() {
 async function uPost(url, body, method) {
   const res = await fetch(apiUrl(url), { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : '{}' });
   const d = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(d.detail || 'request failed');
+  if (!res.ok) throw new Error(apiErr(d, 'request failed'));
   return d;
 }
 async function createUser() {

@@ -35,6 +35,16 @@ INITIATE_PATH = os.getenv("AA_LIVE_INITIATE_PATH", "/bank-data/initiate_periodic
 STATUS_PATH = os.getenv("AA_LIVE_STATUS_PATH", "/bank-data/statuscheck")
 RETRIEVE_PATH = os.getenv("AA_LIVE_RETRIEVE_PATH", "/bank-data/retrievereport")
 
+# Periodic fetch window: request a full month (today-30 .. today) so the report carries
+# a month of transactions / EOD balances instead of a same-day snapshot. Set
+# AA_PERIODIC_FETCH_DAYS=0 to revert to a bare main_txn_id request. The Digitap field
+# NAMES for the range are env-overridable (start_date/end_date by default) in case the
+# account expects from_date/to_date.
+_IST_TZ = timezone(timedelta(hours=5, minutes=30))
+PERIODIC_FETCH_DAYS = int(os.getenv("AA_PERIODIC_FETCH_DAYS", "30"))
+PERIODIC_START_KEY = os.getenv("AA_PERIODIC_START_KEY", "start_date")
+PERIODIC_END_KEY = os.getenv("AA_PERIODIC_END_KEY", "end_date")
+
 # Auth: either a user/pass pair, or the pre-encoded Basic token. Never committed.
 AUTH_USER = os.getenv("AA_LIVE_AUTH_USER", "")
 AUTH_PASS = os.getenv("AA_LIVE_AUTH_PASS", "")
@@ -217,8 +227,16 @@ def status_check(request_id, txn_id=None, live=None):
     return _call("aa_status", STATUS_PATH, body, live)
 
 
-def initiate_periodic(main_txn_id, live=None):
-    return _call("aa_initiate", INITIATE_PATH, {"main_txn_id": main_txn_id}, live)
+def initiate_periodic(main_txn_id, start_date=None, end_date=None, live=None):
+    """Periodic re-pull for an existing mandate. Requests a 30-day window (today-30 ..
+    today, IST) by default so the report spans a month, not a single day. Pass explicit
+    dates to override, or set AA_PERIODIC_FETCH_DAYS=0 to send only the main_txn_id."""
+    body = {"main_txn_id": main_txn_id}
+    if PERIODIC_FETCH_DAYS > 0 or start_date or end_date:
+        today = datetime.now(_IST_TZ).date()
+        body[PERIODIC_START_KEY] = start_date or (today - timedelta(days=PERIODIC_FETCH_DAYS or 30)).isoformat()
+        body[PERIODIC_END_KEY] = end_date or today.isoformat()
+    return _call("aa_initiate", INITIATE_PATH, body, live)
 
 
 def retrieve_report(txn_id, fetch_type="ONETIME", live=None):

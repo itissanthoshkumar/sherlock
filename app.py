@@ -498,18 +498,28 @@ def _consent_expiry_default() -> str:
         return (t + timedelta(days=1826)).isoformat()
 
 
+# Digitap's PRODUCTION host returns request_id (and some txn ids) as JSON numbers, not
+# strings — so any str field that carries a Digitap id must accept a number and coerce
+# it. Without this the retrieve endpoint 422'd on a numeric request_id. See bug (retrieve
+# [object Object]).
+_AA_COERCE = {"coerce_numbers_to_str": True}
+
+
 class AAStatusReq(BaseModel):
+    model_config = _AA_COERCE
     request_id: str
     txn_id: Optional[str] = None
     live: bool = False
 
 
 class AAInitiateReq(BaseModel):
+    model_config = _AA_COERCE
     main_txn_id: str
     live: bool = False
 
 
 class AARetrieveReq(BaseModel):
+    model_config = _AA_COERCE
     txn_id: str
     fetch_type: str = "ONETIME"
     loan_id: Optional[str] = None
